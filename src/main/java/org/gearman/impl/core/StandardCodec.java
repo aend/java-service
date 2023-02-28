@@ -49,9 +49,19 @@ public final class StandardCodec implements GearmanCodec<Integer>{
     private static final int SIZE_POS		= 8;
     private static final int HEADER_SIZE	= 12;
 
+    /////START  java 1.8 workaoriund to force correct implementation
+    private void flip(java.nio.Buffer buffer) {
+        buffer.flip();
+    }
+
+    private void clear(java.nio.Buffer buffer) {
+        buffer.clear();
+    }
+
     private void limit(java.nio.Buffer buffer, int v) {
         buffer.limit(v);
     }
+    /////END   java 1.8 workaoriund to force correct implementation
 
     @Override
     public final ByteBuffer createByteBuffer() {
@@ -111,12 +121,12 @@ public final class StandardCodec implements GearmanCodec<Integer>{
         final int size = buffer.getInt(SIZE_POS);
 
         if(size==0) {
-            buffer.flip();
+            flip(buffer);
 
             final Magic magic = Magic.fromMagicCode(buffer.getInt());
             final Type type = Type.fromTypeValue(buffer.getInt());
 
-            buffer.clear();
+            clear(buffer);
             limit(buffer,1);
             channel.setCodecAttachement(FORMAT);
 
@@ -130,7 +140,7 @@ public final class StandardCodec implements GearmanCodec<Integer>{
                 // Grow Buffer
                 ByteBuffer newbuf = ByteBuffer.allocateDirect(headerAndSize);
 
-                buffer.clear();
+                clear(buffer);
                 limit(buffer,HEADER_SIZE);
                 newbuf.put(buffer);
 
@@ -153,7 +163,7 @@ public final class StandardCodec implements GearmanCodec<Integer>{
             final byte[] body;
 
             try {
-                buffer.flip();
+                flip(buffer);
 
                 magic = Magic.fromMagicCode(buffer.getInt());
                 type = Type.fromTypeValue(buffer.getInt());
@@ -163,7 +173,7 @@ public final class StandardCodec implements GearmanCodec<Integer>{
                 buffer.get(body);
 
             } finally {
-                buffer.clear();
+                clear(buffer);
                 limit(buffer,1);
                 channel.setCodecAttachement(FORMAT);
             }
@@ -191,7 +201,7 @@ public final class StandardCodec implements GearmanCodec<Integer>{
             try {
                 final byte[] strBytes = new byte[buffer.position()];
 
-                buffer.flip();
+                flip(buffer);
                 buffer.get(strBytes);
 
                 final String str = new String(strBytes, GearmanUtils.getCharset());
@@ -199,7 +209,7 @@ public final class StandardCodec implements GearmanCodec<Integer>{
 
                 channel.onDecode(packet);
             } finally {
-                buffer.clear();
+                clear(buffer);
                 limit(buffer,1);
                 channel.setCodecAttachement(FORMAT);
             }
